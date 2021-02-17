@@ -7,7 +7,7 @@ from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvi
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
 
-def getConfirmation() -> bool:
+def get_user_confirmation() -> bool:
     layout = [[sg.Text("Continue with Import to Library?")],
               [sg.Button('Continue')],
               [sg.Button('Cancel')]]
@@ -54,7 +54,7 @@ def main():
         print(workRecord.date, workRecord.workItemID, workRecord.timeSpent, workRecord.description)
     print("Total hours: ", round(total, 2))
 
-    user_confirmed = getConfirmation()
+    user_confirmed = get_user_confirmation()
     if user_confirmed:
         library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
                                                   password=args.password)

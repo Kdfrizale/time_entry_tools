@@ -1,5 +1,5 @@
 import requests
-from time_entry_tools.workrecord import WorkRecord, convertToHours, getWorkItemIDFromTaskName
+from time_entry_tools.workrecord import WorkRecord, convert_to_hours, get_workitem_id_from_task_name
 
 from time_entry_tools.time_entry_provider import TimeEntryProvider
 
@@ -50,7 +50,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
                 task_workRecord_descriptions = [task_workRecord.get("name") for task_workRecord in task_workRecords]
 
                 work_records.append(WorkRecord(date=date.get("name"),
-                                               timeSpent=convertToHours(task.get('duration')),
-                                               workItemID=getWorkItemIDFromTaskName(task.get("name")),
+                                               timeSpent=convert_to_hours(task.get('duration')),
+                                               workItemID=get_workitem_id_from_task_name(task.get("name")),
                                                description=",".join(task_workRecord_descriptions)))
         return work_records

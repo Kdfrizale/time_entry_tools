@@ -1,15 +1,15 @@
 from fractions import Fraction
 
 
-def convertToHours(durationSeconds: float) -> float:
+def convert_to_hours(durationSeconds: float) -> float:
     return max(round(durationSeconds / 3600, 2), 0.25)
 
 
-def roundHoursForLibrary(hourDuration: float) -> str:
+def round_hours_for_library(hourDuration: float) -> str:
     return str(Fraction(round(hourDuration * 4) / 4)) + "h"
 
 
-def getWorkItemIDFromTaskName(taskName: str):
+def get_workitem_id_from_task_name(taskName: str):
     return taskName.split(" ")[0]
 
 

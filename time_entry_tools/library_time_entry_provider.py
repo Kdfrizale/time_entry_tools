@@ -2,7 +2,7 @@ from time_entry_tools.time_entry_provider import TimeEntryProvider
 from zeep import Client
 from zeep.plugins import HistoryPlugin
 
-from time_entry_tools.workrecord import roundHoursForLibrary
+from time_entry_tools.workrecord import round_hours_for_library
 
 
 class Polarion(object):
@@ -76,8 +76,8 @@ class LibraryTimeEntryProvider(TimeEntryProvider):
         user = self.polarion.get_user(self.user_name)
         for work_record in work_records:  ##TODO could paralleize this as each request has to wait for connection/response to the library, meaning it takes awhile (15sec) to do a week's worth of time entry
             print("Saving work record in Library.  WorkItem: %s, Date:%s, TimeSpent: %s, Comment: %s" % (
-            work_record.workItemID, work_record.date, roundHoursForLibrary(work_record.timeSpent),
-            work_record.description))
+                work_record.workItemID, work_record.date, round_hours_for_library(work_record.timeSpent),
+                work_record.description))
             ## Get WorkItemURI
             workItemURI = None
             workItemURI = self.polarion.get_workitem_by_id(work_record.workItemID).uri
@@ -85,7 +85,7 @@ class LibraryTimeEntryProvider(TimeEntryProvider):
             temp_enum = {
                 'id': 'admin'}  ##TODO find a good way to set this enum in clockify or lookup a default in the library project space
             self.polarion.add_work_record_with_comment(workItemURI, user, work_record.date,
-                                                       roundHoursForLibrary(work_record.timeSpent), temp_enum,
+                                                       round_hours_for_library(work_record.timeSpent), temp_enum,
                                                        work_record.description)
 
     def get_work_records(self, stateDate: str, endDate: str):
