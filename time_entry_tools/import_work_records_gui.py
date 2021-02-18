@@ -1,4 +1,5 @@
 import configparser
+
 import PySimpleGUI as sg
 from gooey import Gooey, GooeyParser
 from datetime import datetime
@@ -52,7 +53,7 @@ def main():
     for workRecord in work_records:
         total = total + workRecord.timeSpent
         print(workRecord.date, workRecord.workItemID, workRecord.timeSpent, workRecord.description)
-    print("Total hours: ", round(total, 2))
+    print("Total hours: ", round(total, 2), flush=True)
 
     user_confirmed = get_user_confirmation()
     if user_confirmed:
