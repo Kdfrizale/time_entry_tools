@@ -1,7 +1,0 @@
-[Library]
-server_url = http://librarymanagement.swisslog.com/polarion
-
-
-[Clockify]
-workspace_id = TODO
-api_key = TODO
