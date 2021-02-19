@@ -45,7 +45,7 @@ class Polarion(object):
                                                    ['id', 'title', 'description', 'linkedWorkItems'])[0]
 
     def get_workitems_for_user(self, user_id):
-        return self.tracker.service.queryWorkItems('NOT HAS_VALUE:resolution AND type:task AND NOT status:new AND assignee.id:%s' % user_id, 'id', ['id', 'title', 'project'])
+        return self.tracker.service.queryWorkItems('NOT HAS_VALUE:resolution AND type:(task improvement) AND assignee.id:%s' % user_id, 'id', ['id', 'title', 'project'])
 
     def add_work_record(self, workItemURI, user, date, timeSpent):
         return self.tracker.service.createWorkRecord(workItemURI, user, date, timeSpent)
