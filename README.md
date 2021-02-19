@@ -3,7 +3,7 @@ Various utilities to aid in time entry tasks
 
 
 # Installation
-To use this toolset, download the dist folder located in time_entry_tools/dist.  This folder contains the windows executables for the time entry tools.
+To use this toolset, download the Windows executables located in {TBD}.  Alternatively, you can run the python scripts natively or build the windows executable with PyInstaller.
 
 # Configuration
 Each tool has its own configuration file that needs to be setup before the program will work.
