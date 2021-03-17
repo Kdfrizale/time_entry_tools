@@ -46,11 +46,20 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             for task in date.get("children"):
                 # NOTE: This sums up all clockify time entries into a single Work Record and concats the descriptions
                 # together
-                task_workRecords = task.get("children")
-                task_workRecord_descriptions = [task_workRecord.get("name") for task_workRecord in task_workRecords]
+                # NOTE: Do not concatenate if it is a sales cost center work item
+                if( 'Sales' in task.get("name")):
+                    # logic to deal with sales workItems that should not concatenate time_records
+                    for time_record in task.get("children"):
+                        work_records.append(WorkRecord(date=date.get("name"),
+                                                       timeSpent=convert_to_hours(time_record.get('duration')),
+                                                       workItemID=get_workitem_id_from_task_name(task.get("name")),
+                                                       description=time_record.get("name")))
+                else:
+                    task_workRecords = task.get("children")
+                    task_workRecord_descriptions = [task_workRecord.get("name") for task_workRecord in task_workRecords]
 
-                work_records.append(WorkRecord(date=date.get("name"),
-                                               timeSpent=convert_to_hours(task.get('duration')),
-                                               workItemID=get_workitem_id_from_task_name(task.get("name")),
-                                               description=",".join(task_workRecord_descriptions)))
+                    work_records.append(WorkRecord(date=date.get("name"),
+                                                   timeSpent=convert_to_hours(task.get('duration')),
+                                                   workItemID=get_workitem_id_from_task_name(task.get("name")),
+                                                   description=",".join(task_workRecord_descriptions)))
         return work_records
