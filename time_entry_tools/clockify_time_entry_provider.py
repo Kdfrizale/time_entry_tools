@@ -14,6 +14,10 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         return "https://reports.api.clockify.me/v1/workspaces/%s/reports/summary" % self.clockify_workspace_id
 
     @property
+    def projects_endpoint(self):
+        return "https://api.clockify.me/api/v1/workspaces/%s/projects" % self.clockify_workspace_id
+
+    @property
     def headers(self):
         return {
             "content-type": "application/json",
@@ -35,8 +39,48 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         response = requests.post(self.summary_report_endpoint, headers=self.headers, json=json_request)
         return self.parse_clockify_response_for_work_records(response.json())
 
+    def get_projects(self):
+        response = requests.get(self.projects_endpoint, headers=self.headers)
+        return self.parse_clockify_response_for_projects(response.json())
+
     def save_work_records(self, work_records: list):
         raise NotImplementedError
+
+    def add_project(self, project_name):
+        json_request = {
+            "name": project_name,
+        }
+        response = requests.post(self.projects_endpoint, headers=self.headers, json=json_request)
+        if response.status_code != 201:
+            raise Exception("Project creation failed in Clockify! Response code : ", response.status_code)
+
+    def get_tasks_for_project(self, project_id):
+        response = requests.get(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers)
+        return self.parse_clockify_response_for_project_tasks(response.json())
+
+
+    def add_task(self, project_id, task_name):
+        json_request = {
+            "name": task_name,
+        }
+        response = requests.post(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers, json=json_request)
+        if response.status_code != 201:
+            raise Exception("Task creation failed in Clockify! Response code : ", response.status_code)
+
+    @staticmethod
+    def parse_clockify_response_for_project_tasks(json_response):
+        tasks = []
+        for task_json in json_response:
+            tasks.append(str(task_json.get('name')))
+        return tasks
+
+    @staticmethod
+    def parse_clockify_response_for_projects(json_response):
+        projects = []
+        for project in json_response:
+            projects.append((str(project.get('name')), str(project.get('id'))))
+        return projects
+        # print(projects)
 
     @staticmethod
     def parse_clockify_response_for_work_records(json_response):
