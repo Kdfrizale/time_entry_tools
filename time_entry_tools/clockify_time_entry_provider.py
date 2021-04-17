@@ -1,13 +1,22 @@
+from collections import namedtuple
+
 import requests
 from time_entry_tools.workrecord import WorkRecord, convert_to_hours, get_workitem_id_from_task_name
 
 from time_entry_tools.time_entry_provider import TimeEntryProvider
+
+Project = namedtuple('Project', 'name id')
 
 
 class ClockifyTimeEntryProvider(TimeEntryProvider):
     def __init__(self, clockify_api_key, clockify_workspace_id):
         self.clockify_api_key = clockify_api_key
         self.clockify_workspace_id = clockify_workspace_id
+        self._api_rate_limit_delay = 0.11  # seconds, rate limit to less than 10 requests per second
+
+    @property
+    def api_rate_limit_delay(self):
+        return self._api_rate_limit_delay
 
     @property
     def summary_report_endpoint(self):
@@ -58,12 +67,12 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         response = requests.get(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers)
         return self.parse_clockify_response_for_project_tasks(response.json())
 
-
     def add_task(self, project_id, task_name):
         json_request = {
             "name": task_name,
         }
-        response = requests.post(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers, json=json_request)
+        response = requests.post(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers,
+                                 json=json_request)
         if response.status_code != 201:
             raise Exception("Task creation failed in Clockify! Response code : ", response.status_code)
 
@@ -78,7 +87,8 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
     def parse_clockify_response_for_projects(json_response):
         projects = []
         for project in json_response:
-            projects.append((str(project.get('name')), str(project.get('id'))))
+            projects.append(Project(str(project.get('name')),str(project.get('id'))))
+            # projects.append((str(project.get('name')), str(project.get('id'))))
         return projects
         # print(projects)
 
@@ -91,7 +101,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
                 # NOTE: This sums up all clockify time entries into a single Work Record and concats the descriptions
                 # together
                 # NOTE: Do not concatenate if it is a sales cost center work item
-                if( 'Sales' in task.get("name")):
+                if ('Sales' in task.get("name")):
                     # logic to deal with sales workItems that should not concatenate time_records
                     for time_record in task.get("children"):
                         work_records.append(WorkRecord(date=date.get("name"),

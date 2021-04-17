@@ -4,6 +4,7 @@ import time
 
 from gooey import Gooey, GooeyParser
 
+from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
 from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvider
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
@@ -20,17 +21,9 @@ def add_projects_from_library_to_clockify(library_workitems, clockify_projects, 
     projects_not_in_clockify = library_projects.difference(clockify_projects_names)
     # print("Projects not in clockify: ", projects_not_in_clockify)
     for project in projects_not_in_clockify:
-        ##TODO rate limit this to 10 requests per second
         clockify_client.add_project(project)
         time.sleep(0.11) # Rate limit to less than 10 API requests per second
 
-# def add_projects_from_library_to_clockify(library_workitem_tuples, clockify_projects, clockify_client):
-#     clockify_projects_names = {project[0] for project in clockify_projects}
-#     library_projects = {workitem_tuple[0] for workitem_tuple in library_workitem_tuples}
-#     projects_not_in_clockify = library_projects.difference(clockify_projects_names)
-#     # print("Projects not in clockify: ", projects_not_in_clockify)
-#     for project in projects_not_in_clockify:
-#         clockify_client.add_project(project)
 
 def add_tasks_from_library_to_clockify(library_workitems, clockify_projects, clockify_client):
     ## Add Tasks not in clockify to clockify
@@ -38,16 +31,12 @@ def add_tasks_from_library_to_clockify(library_workitems, clockify_projects, clo
     library_tasks = {workitem.id + " - " + workitem.title for workitem in library_workitems}
     clockify_tasks = []
     for project in clockify_projects:
-        ##TODO rate limit this to 10 requests per second
         project_id = project[1]
         tasks = clockify_client.get_tasks_for_project(project_id)
         clockify_tasks += tasks
         time.sleep(0.11) # Rate limit to less than 10 API requests per second
 
     tasks_to_add_to_clockify = library_tasks.difference(set(clockify_tasks))
-    print("library tasks", library_tasks)
-    print("clockify tasks", set(clockify_tasks))
-    print("tasks not in clockify", tasks_to_add_to_clockify)
 
     # get Library Project name for task
     library_workitem_tuples_to_add = [(workitem.project.name, workitem.id + " - " + workitem.title) for workitem in library_workitems if workitem.id + " - " + workitem.title in tasks_to_add_to_clockify]
@@ -94,11 +83,16 @@ def main():
                                               password=args.password)
     clockify_client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
 
+    myServiceTest = ClockifyTaskSyncService(library_client, clockify_client)
+    myServiceTest.sync()
+
     ## OLD METHOD - Export to CSV then manual Import
     # export_library_tasks_to_file(library_client, args.output_file)
 
     ## NEW METHOD - Automatic Sync with library and clockify
-    sync_library_and_clockify_projects_and_tasks(library_client, clockify_client)
+    # sync_library_and_clockify_projects_and_tasks(library_client, clockify_client)
+    myServiceTest = ClockifyTaskSyncService(library_client, clockify_client)
+    myServiceTest.sync()
 
 
 if __name__ == '__main__':

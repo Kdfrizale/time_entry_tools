@@ -4,16 +4,17 @@ import PySimpleGUI as sg
 from gooey import Gooey, GooeyParser
 from datetime import datetime
 
+from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
 from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvider
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
 
-def get_user_confirmation() -> bool:
-    layout = [[sg.Text("Continue with Import to Library?")],
+def get_user_confirmation(prompt) -> bool:
+    layout = [[sg.Text(prompt)],
               [sg.Button('Continue')],
               [sg.Button('Cancel')]]
 
-    window = sg.Window('Continue with Import to the Library?', layout)
+    window = sg.Window(prompt, layout)
     event, values = window.read()
     window.close()
     return event == 'Continue'
@@ -45,8 +46,8 @@ def main():
     config.read("config.cfg")
 
     ## Get time from source application
-    client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
-    work_records = client.get_work_records(args.start_date, args.end_date)
+    clockify_client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
+    work_records = clockify_client.get_work_records(args.start_date, args.end_date)
 
     ## Show user the work records retrived from source application
     total = 0
@@ -55,7 +56,7 @@ def main():
         print(workRecord.date, workRecord.workItemID, workRecord.timeSpent, workRecord.description)
     print("Total hours: ", round(total, 2), flush=True)
 
-    user_confirmed = get_user_confirmation()
+    user_confirmed = get_user_confirmation("Continue with Import to Library?")
     if user_confirmed:
         library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
                                                   password=args.password)
@@ -63,6 +64,13 @@ def main():
         # print(library_client.getEnumOptionsFor("slnasolutionsarchitecturehub", "work-record-type"))
     else:
         print("Library Import Cancelled")
+
+    user_confirmed_sync = get_user_confirmation("Sync Active Tasks from Library to Clockify?")
+    if user_confirmed_sync:
+        syncService = ClockifyTaskSyncService(library_client, clockify_client)
+        syncService.sync()
+    else:
+        print("Active Task Sync Cancelled")
 
 
 if __name__ == '__main__':
