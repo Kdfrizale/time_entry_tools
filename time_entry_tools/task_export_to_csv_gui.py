@@ -19,7 +19,7 @@ def export_library_tasks_to_file(library_client, filename):
         writer.writerows(formatted_workitem_list)
 
 
-# @Gooey(program_name="Task Exporter", auto_start=True, use_cmd_args=True)
+@Gooey(program_name="Task Exporter", auto_start=True, use_cmd_args=True)
 def main():
     ## Parse Command-Line arguments
     parser = GooeyParser(description="Task Exporter")
