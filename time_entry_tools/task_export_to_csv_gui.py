@@ -23,8 +23,8 @@ def export_library_tasks_to_file(library_client, filename):
 def main():
     ## Parse Command-Line arguments
     parser = GooeyParser(description="Task Exporter")
-    # parser.add_argument("user_name", help="Your library user name", type=str)
-    # parser.add_argument("password", help="Your library password", type=str, widget='PasswordField')
+    parser.add_argument("user_name", help="Your library user name", type=str)
+    parser.add_argument("password", help="Your library password", type=str, widget='PasswordField')
     # parser.add_argument("output_file", help="Output csv filename", type=str, widget='FileSaver')
     args = parser.parse_args()
 

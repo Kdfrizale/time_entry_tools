@@ -99,8 +99,6 @@ class LibraryTimeEntryProvider(TimeEntryProvider):
 
     def save_work_records(self, work_records: list):
         ## Get User object from library
-        print("saving")
-        pass
         user = self.polarion.get_user(self.user_name)
         for work_record in work_records:  ##TODO could paralleize this as each request has to wait for connection/response to the library, meaning it takes awhile (15sec) to do a week's worth of time entry
             print("Saving work record in Library.  WorkItem: %s, Date:%s, TimeSpent: %s, Comment: %s" % (

@@ -11,7 +11,7 @@ from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvi
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
 
-def get_user_confirmation(prompt) -> bool:
+def get_user_confirmation(prompt: str) -> bool:
     layout = [[sg.Text(prompt)],
               [sg.Button('Continue')],
               [sg.Button('Cancel')]]
@@ -29,13 +29,13 @@ def getPreviouslyCompletedDates():
         return file.read().splitlines()
 
 
-def checkIfDatesHaveAlreadyBeenCompleted(start_date, end_date):
+def checkIfDatesHaveAlreadyBeenCompleted(start_date: datetime, end_date: datetime):
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     completed_dates = getPreviouslyCompletedDates()
     return any(date in completed_dates for date in dates)
 
 
-def saveDatesAsCompleted(start_date, end_date):
+def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     with open('completed_dates.txt', 'a') as file:
         file.write('\n'.join(dates))
@@ -68,8 +68,9 @@ def main():
     config.read("config.cfg")
 
     if checkIfDatesHaveAlreadyBeenCompleted(args.start_date, args.end_date):
-        print("WARNING!.. A date in the selected Date Range has already been processed.  Continuing with this process might result in duplicated time entry.")
-        ignore_warning = get_user_confirmation("WARNING: Selected date has already been processed.  Continuing with this process might result in duplicated time entry")
+        ignore_warning = get_user_confirmation(
+            "WARNING: Selected date has already been processed.  "
+            "Continuing with this process might result in duplicated time entry")
         if not ignore_warning:
             return
 
@@ -79,7 +80,8 @@ def main():
                                               library_workitem_query=config['Library']['workitem_query'])
 
     workRecordSyncService = LibraryWorkRecordSyncService(library_client=library_client, clockify_client=clockify_client,
-                                                         start_date=args.start_date.isoformat(), end_date=args.end_date.isoformat())
+                                                         start_date=args.start_date.isoformat(),
+                                                         end_date=args.end_date.isoformat())
 
     # Show user the work records retrieved from source application
     workRecordSyncService.showWorkRecordsToSync()
