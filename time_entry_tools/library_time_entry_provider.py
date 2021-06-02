@@ -18,11 +18,11 @@ class SslContextHttpAdapter(HTTPAdapter):
 
 
 class Polarion(object):
-    def __init__(self, url, username, password):
+    def __init__(self, url, username, password, library_workitem_query):
         self.url = url
         self.username = username
         self.password = password
-
+        self.library_workitem_query = library_workitem_query
         self.history = HistoryPlugin()
 
         tmp_session = Session()
@@ -63,7 +63,11 @@ class Polarion(object):
                                                    ['id', 'title', 'description', 'linkedWorkItems'])[0]
 
     def get_workitems_for_user(self, user_id):
-        return self.tracker.service.queryWorkItems('NOT HAS_VALUE:resolution AND type:(task improvement) AND assignee.id:%s' % user_id, 'id', ['id', 'title', 'project'])
+        query = self.library_workitem_query + f" AND assignee.id:{user_id}"
+        return self.tracker.service.queryWorkItems(query, 'id', ['id', 'title', 'project'])
+
+    def get_workitems_with_IDs(self, workItemIDs):
+        return self.tracker.service.queryWorkItems('id:(%s)' % " ".join(workItemIDs), 'id', ['id', 'title', 'project'])
 
     def add_work_record(self, workItemURI, user, date, timeSpent):
         return self.tracker.service.createWorkRecord(workItemURI, user, date, timeSpent)
@@ -77,17 +81,21 @@ class Polarion(object):
 
 
 class LibraryTimeEntryProvider(TimeEntryProvider):
-    def __init__(self, library_url: str, user_name: str, password: str):
+    def __init__(self, library_url: str, user_name: str, password: str, library_workitem_query: str):
         self.library_url = library_url
         self.user_name = user_name
         self.password = password
-        self.polarion = Polarion(library_url, user_name, password)
+        self.library_workitem_query = library_workitem_query
+        self.polarion = Polarion(library_url, user_name, password, library_workitem_query)
 
     def get_enum_options_for_enum(self, projectId, enumId):
         return self.polarion.get_all_enum_option_ids_for_id(projectId, enumId)
 
     def get_workItems_for_User(self):
         return self.polarion.get_workitems_for_user(self.user_name)
+
+    def get_workitems_with_IDs(self, workItem_IDs):
+        return self.polarion.get_workitems_with_IDs(workItem_IDs)
 
     def save_work_records(self, work_records: list):
         ## Get User object from library

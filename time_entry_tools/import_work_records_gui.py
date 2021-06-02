@@ -5,6 +5,7 @@ from gooey import Gooey, GooeyParser
 from datetime import datetime
 
 from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
+from time_entry_tools.LibraryWorkRecordSyncService import LibraryWorkRecordSyncService
 from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvider
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
@@ -22,7 +23,7 @@ def get_user_confirmation(prompt) -> bool:
 
 @Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True)
 def main():
-    ## Parse Command-Line arguments
+    # Parse Command-Line arguments
     parser = GooeyParser(description="Time Entry Export/Import")
     parser.add_argument("user_name", help="Your library user name", type=str)
     parser.add_argument("password", help="Your library password", type=str, widget='PasswordField')
@@ -41,34 +42,31 @@ def main():
     print("Starting Date: %s" % args.start_date)
     print("Ending Date: %s" % args.end_date)
 
-    ## Read configuration file
+    # Read configuration file
     config = configparser.ConfigParser()
     config.read("config.cfg")
 
-    ## Get time from source application
     clockify_client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
-    work_records = clockify_client.get_work_records(args.start_date, args.end_date)
+    library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
+                                              password=args.password,
+                                              library_workitem_query=config['Library']['workitem_query'])
 
-    ## Show user the work records retrived from source application
-    total = 0
-    for workRecord in work_records:
-        total = total + workRecord.timeSpent
-        print(workRecord.date, workRecord.workItemID, workRecord.timeSpent, workRecord.description)
-    print("Total hours: ", round(total, 2), flush=True)
+    workRecordSyncService = LibraryWorkRecordSyncService(library_client=library_client, clockify_client=clockify_client,
+                                                         start_date=args.start_date, end_date=args.end_date)
+
+    # Show user the work records retrieved from source application
+    workRecordSyncService.showWorkRecordsToSync()
 
     user_confirmed = get_user_confirmation("Continue with Import to Library?")
     if user_confirmed:
-        library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
-                                                  password=args.password)
-        library_client.save_work_records(work_records)
-        # print(library_client.getEnumOptionsFor("slnasolutionsarchitecturehub", "work-record-type"))
+        workRecordSyncService.sync()
     else:
         print("Library Import Cancelled")
 
     user_confirmed_sync = get_user_confirmation("Sync Active Tasks from Library to Clockify?")
     if user_confirmed_sync:
-        syncService = ClockifyTaskSyncService(library_client, clockify_client)
-        syncService.sync()
+        taskSyncService = ClockifyTaskSyncService(library_client, clockify_client)
+        taskSyncService.sync()
     else:
         print("Active Task Sync Cancelled")
 

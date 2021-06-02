@@ -1,4 +1,6 @@
-from collections import namedtuple
+from collections import namedtuple, deque
+from datetime import datetime, timedelta
+import time
 
 import requests
 from time_entry_tools.workrecord import WorkRecord, convert_to_hours, get_workitem_id_from_task_name
@@ -6,6 +8,18 @@ from time_entry_tools.workrecord import WorkRecord, convert_to_hours, get_workit
 from time_entry_tools.time_entry_provider import TimeEntryProvider
 
 Project = namedtuple('Project', 'name id')
+Task = namedtuple('Task', 'name id')
+
+
+def api_rate_limit(func):
+    def inner(self, *args, **kwargs):
+        # print(f"the earliest time is{self._previous_request_timestamps[0]}, the current time minus 1sec is: {datetime.now() - timedelta(seconds=1)}")
+        if self._previous_request_timestamps[0] >= datetime.now() - timedelta(seconds=1):
+            print("API Rate Limiting... 10 Requests per second")
+            time.sleep(self.api_rate_limit_delay) # Rate limit to less than 10 API requests per second
+        self._previous_request_timestamps.append(datetime.now())
+        return func(self,*args, **kwargs)
+    return inner
 
 
 class ClockifyTimeEntryProvider(TimeEntryProvider):
@@ -13,6 +27,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         self.clockify_api_key = clockify_api_key
         self.clockify_workspace_id = clockify_workspace_id
         self._api_rate_limit_delay = 0.11  # seconds, rate limit to less than 10 requests per second
+        self._previous_request_timestamps = deque(10*[datetime.min], maxlen=10)
 
     @property
     def api_rate_limit_delay(self):
@@ -33,6 +48,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             "x-api-key": self.clockify_api_key
         }
 
+    @api_rate_limit
     def get_work_records(self, stateDateTime: str, endDateTime: str):
         json_request = {
             "dateRangeStart": stateDateTime,
@@ -48,6 +64,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         response = requests.post(self.summary_report_endpoint, headers=self.headers, json=json_request)
         return self.parse_clockify_response_for_work_records(response.json())
 
+    @api_rate_limit
     def get_projects(self):
         response = requests.get(self.projects_endpoint, headers=self.headers)
         return self.parse_clockify_response_for_projects(response.json())
@@ -55,6 +72,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
     def save_work_records(self, work_records: list):
         raise NotImplementedError
 
+    @api_rate_limit
     def add_project(self, project_name):
         json_request = {
             "name": project_name,
@@ -63,10 +81,17 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         if response.status_code != 201:
             raise Exception("Project creation failed in Clockify! Response code : ", response.status_code)
 
-    def get_tasks_for_project(self, project_id):
-        response = requests.get(self.projects_endpoint + "/%s/tasks" % project_id, headers=self.headers)
+    @api_rate_limit
+    def get_active_tasks_for_project(self, project_id):
+        response = requests.get(self.projects_endpoint + "/%s/tasks?is-active=true" % project_id, headers=self.headers)
         return self.parse_clockify_response_for_project_tasks(response.json())
 
+    @api_rate_limit
+    def get_done_tasks_for_project(self, project_id):
+        response = requests.get(self.projects_endpoint + "/%s/tasks?is-active=false" % project_id, headers=self.headers)
+        return self.parse_clockify_response_for_project_tasks(response.json())
+
+    @api_rate_limit
     def add_task(self, project_id, task_name):
         json_request = {
             "name": task_name,
@@ -76,11 +101,39 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         if response.status_code != 201:
             raise Exception("Task creation failed in Clockify! Response code : ", response.status_code)
 
+    @api_rate_limit
+    def mark_task_as_done(self, project_id, task_id, task_name):
+        json_request = {
+          "name": task_name,
+          "status": "DONE"
+        }
+        response = requests.put(self.projects_endpoint + f'/{project_id}/tasks/{task_id}', headers=self.headers, json=json_request)
+        if response.status_code != 200:
+            raise Exception("Task update failed in Clockify! Response code : ", response.status_code)
+
+    @api_rate_limit
+    def mark_task_as_active(self, project_id, task_id, task_name):
+        json_request = {
+            "name": task_name,
+            "status": "ACTIVE"
+        }
+        response = requests.put(self.projects_endpoint + f'/{project_id}/tasks/{task_id}', headers=self.headers,
+                                json=json_request)
+        if response.status_code != 200:
+            raise Exception("Task update failed in Clockify! Response code : ", response.status_code)
+
+    @api_rate_limit
+    def delete(self, project_id, task_id):
+        response = requests.delete(self.projects_endpoint + f'/{project_id}/tasks/{task_id}', headers=self.headers)
+        if response.status_code != 200:
+            raise Exception("Task deletion failed in Clockify! Response code : ", response.status_code)
+
+
     @staticmethod
     def parse_clockify_response_for_project_tasks(json_response):
         tasks = []
         for task_json in json_response:
-            tasks.append(str(task_json.get('name')))
+            tasks.append(Task(str(task_json.get('name')), str(task_json.get('id'))))
         return tasks
 
     @staticmethod

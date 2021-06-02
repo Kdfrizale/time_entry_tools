@@ -1,6 +1,6 @@
 [Library]
 server_url = http://librarymanagement.swisslog.com/polarion
-
+workitem_query = NOT HAS_VALUE:resolution AND type:(task improvement)
 
 [Clockify]
 workspace_id = TODO
