@@ -1,5 +1,6 @@
 # Configurations
 config.cfg
+completed_dates.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
