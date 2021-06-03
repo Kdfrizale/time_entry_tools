@@ -42,7 +42,7 @@ def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
         file.write('\n')
 
 
-@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True)
+@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610,610))
 def main():
     # Parse Command-Line arguments
     parser = GooeyParser(description="Time Entry Export/Import")
@@ -55,17 +55,29 @@ def main():
                         default=start_date_time_default, widget='DateChooser')
     parser.add_argument("-e", "--end_date", help="End date for time entry (inclusive). Format YYYY-MM-DD",
                         default=end_date_time_default, widget='DateChooser')
+    parser.add_argument("-o", "--only_sync", help="Do not run time entry import, only sync tasks/projects",
+                        default=False, action="store_true", widget='CheckBox')
     args = parser.parse_args()
     args.start_date = datetime.strptime(args.start_date, "%Y-%m-%d").replace(hour=0, minute=0, second=0,
                                                                              microsecond=0)
     args.end_date = datetime.strptime(args.end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59,
                                                                          microsecond=999999)
-    print("Starting Date: %s" % args.start_date.isoformat())
-    print("Ending Date: %s" % args.end_date.isoformat())
+    print("Starting Date: %s" % args.start_date.isoformat(), flush=True)
+    print("Ending Date: %s" % args.end_date.isoformat(),flush=True)
 
     # Read configuration file
     config = configparser.ConfigParser()
     config.read("config.cfg")
+
+    clockify_client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
+    library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
+                                              password=args.password,
+                                              library_workitem_query=config['Library']['workitem_query'])
+
+    if args.only_sync:
+        taskSyncService = ClockifyTaskSyncService(library_client, clockify_client)
+        taskSyncService.sync()
+        return
 
     if checkIfDatesHaveAlreadyBeenCompleted(args.start_date, args.end_date):
         ignore_warning = get_user_confirmation(
@@ -73,11 +85,6 @@ def main():
             "Continuing with this process might result in duplicated time entry")
         if not ignore_warning:
             return
-
-    clockify_client = ClockifyTimeEntryProvider(config["Clockify"]["api_key"], config["Clockify"]["workspace_id"])
-    library_client = LibraryTimeEntryProvider(library_url=config['Library']['server_url'], user_name=args.user_name,
-                                              password=args.password,
-                                              library_workitem_query=config['Library']['workitem_query'])
 
     workRecordSyncService = LibraryWorkRecordSyncService(library_client=library_client, clockify_client=clockify_client,
                                                          start_date=args.start_date.isoformat(),

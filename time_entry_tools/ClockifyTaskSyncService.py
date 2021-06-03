@@ -22,6 +22,7 @@ class ClockifyTaskSyncService:
 
     def sync(self):
         """Primary method. Syncs both projects and tasks from the Library to Clockify."""
+        print("Syncing Tasks and Projects...", flush=True)
         self.initialize_data()
         self.add_tasks_to_clockify()
         self.remove_tasks_from_clockify()
