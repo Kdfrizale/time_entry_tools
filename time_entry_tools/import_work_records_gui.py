@@ -42,7 +42,8 @@ def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
         file.write('\n')
 
 
-@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610,610))
+# TODO Should add some version check/date built as a menu option
+@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610, 610))
 def main():
     # Parse Command-Line arguments
     parser = GooeyParser(description="Time Entry Export/Import")
@@ -63,7 +64,7 @@ def main():
     args.end_date = datetime.strptime(args.end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59,
                                                                          microsecond=999999)
     print("Starting Date: %s" % args.start_date.isoformat(), flush=True)
-    print("Ending Date: %s" % args.end_date.isoformat(),flush=True)
+    print("Ending Date: %s" % args.end_date.isoformat(), flush=True)
 
     # Read configuration file
     config = configparser.ConfigParser()
@@ -81,8 +82,8 @@ def main():
 
     if checkIfDatesHaveAlreadyBeenCompleted(args.start_date, args.end_date):
         ignore_warning = get_user_confirmation(
-            "WARNING: Selected date has already been processed.  "
-            "Continuing with this process might result in duplicated time entry")
+            "WARNING: You have already exported today's time entry to the Library.  "
+            "Clicking Continue may result in duplicated time entry for today.")
         if not ignore_warning:
             return
 
@@ -100,7 +101,7 @@ def main():
     else:
         print("Library Import Cancelled")
 
-    user_confirmed_sync = get_user_confirmation("Sync Active Tasks from Library to Clockify?")
+    user_confirmed_sync = get_user_confirmation("Optional: Sync Active Tasks from Library to Clockify?")
     if user_confirmed_sync:
         taskSyncService = ClockifyTaskSyncService(library_client, clockify_client)
         taskSyncService.sync()

@@ -3,5 +3,5 @@ server_url = https://librarymanagement.swisslog.com/polarion
 workitem_query = NOT HAS_VALUE:resolution AND type:(task improvement)
 
 [Clockify]
-workspace_id = TODO
-api_key = TODO
+workspace_id = Your_Workspace_ID
+api_key = Your_API_Key
