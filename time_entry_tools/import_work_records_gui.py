@@ -43,7 +43,17 @@ def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
 
 
 # TODO Should add some version check/date built as a menu option
-@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610, 610))
+@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610, 610), menu=[{'name': 'Help', 'items': [{
+    'type': 'Link',
+    'menuTitle': 'Documentation',
+    'url':'https://librarymanagement.swisslog.com/polarion/#/project/slnasolutionsarchitecturehub/wiki/Guides/Setup%20Clockify%20Time%20Entry'
+},{
+    'type': 'MessageDialog',
+    'menuTitle' : 'Author',
+    'caption': 'Author Information',
+    'message': 'Kyle Frizzell'
+
+}]}])
 def main():
     # Parse Command-Line arguments
     parser = GooeyParser(description="Time Entry Export/Import")

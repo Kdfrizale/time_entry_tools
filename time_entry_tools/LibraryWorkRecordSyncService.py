@@ -12,6 +12,5 @@ class LibraryWorkRecordSyncService():
     def showWorkRecordsToSync(self):
         for workRecord in self.work_records:
             print(f"WorkRecord Date: {workRecord.date} | WorkItem: {workRecord.workItemID} | Timespent: {workRecord.timeSpent} | Description: {workRecord.description}")
-            # print(workRecord.date, workRecord.workItemID, workRecord.timeSpent, workRecord.description) ##TODO format this output to be better, or add a header
         total = sum([workRecord.timeSpent for workRecord in self.work_records])
         print("Total hours: ", round(total, 2), flush=True)
