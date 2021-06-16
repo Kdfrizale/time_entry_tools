@@ -14,6 +14,7 @@ class ClockifyTaskSyncService:
         self.library_workitems = None
 
     def initialize_data(self):
+        """Get the current state of Clockify and the Library"""
         self.library_workitems_raw = self._library_client.get_workItems_for_User()
         self.library_workitems = self.get_library_workitems_from_raw()
         self.sync_projects()
@@ -34,10 +35,12 @@ class ClockifyTaskSyncService:
         self.clockify_projects = self._clockify_client.get_projects()  # Update list to include ids of newly created projects
 
     def get_library_workitems_from_raw(self):
+        """Parse the workitem library response into WorkItem objects"""
         return [LibrayWorkItem(project_name=workitem.project.name, workitem_title=workitem.id + " - " + workitem.title)
                 for workitem in self.library_workitems_raw]
 
     def add_projects_from_library_to_clockify(self):
+        """Add missing projects to Clockify"""
         clockify_projects_names = {project.name for project in self.clockify_projects}
         library_projects = {workitem.project.name for workitem in self.library_workitems_raw}
         projects_not_in_clockify = library_projects.difference(clockify_projects_names)
@@ -75,7 +78,9 @@ class ClockifyTaskSyncService:
                 self.handle_task_addition_to_clockify(workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict, clockify_projects_dict)
 
     def handle_task_addition_to_clockify(self, workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict, clockify_projects_dict):
-        """Create the task in Clockify if it does not exist.  If it does exist and is marked DONE, then mark it ACTIVE."""
+        """Create the task in Clockify if it does not exist.
+        If it does exist and is marked DONE, then mark it ACTIVE."""
+
         if workitem_to_add.workitem_title in clockify_done_task_names:
             ## Task needs to be marked active
             task_to_mark_active = clockify_done_tasks_dict[workitem_to_add.workitem_title]

@@ -12,6 +12,7 @@ from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvide
 
 
 def get_user_confirmation(prompt: str) -> bool:
+    """Show GUI with prompt for user confirmation"""
     layout = [[sg.Text(prompt)],
               [sg.Button('Continue')],
               [sg.Button('Cancel')]]
@@ -23,6 +24,7 @@ def get_user_confirmation(prompt: str) -> bool:
 
 
 def getPreviouslyCompletedDates():
+    """Get a list of dates the tool has already imported time entry.  Used to avoid duplication of time entry."""
     if not os.path.exists('completed_dates.txt'):
         return []
     with open('completed_dates.txt', 'r') as file:
@@ -30,12 +32,14 @@ def getPreviouslyCompletedDates():
 
 
 def checkIfDatesHaveAlreadyBeenCompleted(start_date: datetime, end_date: datetime):
+    """Verify the selected dates have not been selected for a past import."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     completed_dates = getPreviouslyCompletedDates()
     return any(date in completed_dates for date in dates)
 
 
 def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
+    """Record the selected dates as completed."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     with open('completed_dates.txt', 'a') as file:
         file.write('\n'.join(dates))

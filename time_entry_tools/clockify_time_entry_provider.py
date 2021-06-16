@@ -12,8 +12,8 @@ Task = namedtuple('Task', 'name id')
 
 
 def api_rate_limit(func):
+    """Decorator to limit how often a function can be called"""
     def inner(self, *args, **kwargs):
-        # print(f"the earliest time is{self._previous_request_timestamps[0]}, the current time minus 1sec is: {datetime.now() - timedelta(seconds=1)}")
         if self._previous_request_timestamps[0] >= datetime.now() - timedelta(seconds=1):
             print("API Rate Limiting... 10 Requests per second")
             time.sleep(self.api_rate_limit_delay) # Rate limit to less than 10 API requests per second
@@ -147,6 +147,9 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
 
     @staticmethod
     def parse_clockify_response_for_work_records(json_response):
+        """Parse Clockify response into WorkRecord objects.
+        Aggregates WorkRecords together if they are for the same WorkItem.
+        If the WorkItem is for Sales, do NOT aggregate WorkRecords."""
         dates = json_response.get('groupOne')
         work_records = []
         for date in dates:

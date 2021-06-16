@@ -6,6 +6,7 @@ def convert_to_hours(durationSeconds: float) -> float:
 
 
 def round_hours_for_library(hourDuration: float) -> str:
+    """Round the input to the nearest quarter hour.  Convert to String"""
     return str(Fraction(round(hourDuration * 4) / 4)) + "h"
 
 
