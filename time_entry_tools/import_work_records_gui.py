@@ -1,9 +1,10 @@
-import configparser
+"""Time Entry Tool to import time records from Clockify to the Library"""
 
-import PySimpleGUI as sg
-from gooey import Gooey, GooeyParser
+import configparser
 from datetime import datetime, timedelta
 import os.path
+from gooey import Gooey, GooeyParser
+import PySimpleGUI as sg
 
 from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
 from time_entry_tools.LibraryWorkRecordSyncService import LibraryWorkRecordSyncService
@@ -18,12 +19,12 @@ def get_user_confirmation(prompt: str) -> bool:
               [sg.Button('Cancel')]]
 
     window = sg.Window(prompt, layout)
-    event, values = window.read()
+    event = window.read()[0]
     window.close()
     return event == 'Continue'
 
 
-def getPreviouslyCompletedDates():
+def get_previously_completed_dates():
     """Get a list of dates the tool has already imported time entry.  Used to avoid duplication of time entry."""
     if not os.path.exists('completed_dates.txt'):
         return []
@@ -31,14 +32,14 @@ def getPreviouslyCompletedDates():
         return file.read().splitlines()
 
 
-def checkIfDatesHaveAlreadyBeenCompleted(start_date: datetime, end_date: datetime):
+def is_selected_date_range_already_complete(start_date: datetime, end_date: datetime):
     """Verify the selected dates have not been selected for a past import."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
-    completed_dates = getPreviouslyCompletedDates()
+    completed_dates = get_previously_completed_dates()
     return any(date in completed_dates for date in dates)
 
 
-def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
+def save_dates_as_completed(start_date: datetime, end_date: datetime):
     """Record the selected dates as completed."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     with open('completed_dates.txt', 'a') as file:
@@ -47,18 +48,20 @@ def saveDatesAsCompleted(start_date: datetime, end_date: datetime):
 
 
 # TODO Should add some version check/date built as a menu option
-@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610, 610), menu=[{'name': 'Help', 'items': [{
-    'type': 'Link',
-    'menuTitle': 'Documentation',
-    'url':'https://librarymanagement.swisslog.com/polarion/#/project/slnasolutionsarchitecturehub/wiki/Guides/Setup%20Clockify%20Time%20Entry'
-},{
-    'type': 'MessageDialog',
-    'menuTitle' : 'Author',
-    'caption': 'Author Information',
-    'message': 'Kyle Frizzell'
-
-}]}])
+@Gooey(program_name="Time Entry Export/Import", auto_start=True, use_cmd_args=True, default_size=(610, 610),
+       menu=[{'name': 'Help', 'items': [{
+           'type': 'Link',
+           'menuTitle': 'Documentation',
+           'url': 'https://librarymanagement.swisslog.com/polarion/#/project/slnasolutionsarchitecturehub/wiki/Guides'
+                  '/Setup%20Clockify%20Time%20Entry '
+       }, {
+           'type': 'MessageDialog',
+           'menuTitle': 'Author',
+           'caption': 'Author Information',
+           'message': 'Kyle Frizzell'
+       }]}])
 def main():
+    """Main Program"""
     # Parse Command-Line arguments
     parser = GooeyParser(description="Time Entry Export/Import")
     parser.add_argument("user_name", help="Your library user name", type=str)
@@ -90,35 +93,36 @@ def main():
                                               library_workitem_query=config['Library']['workitem_query'])
 
     if args.only_sync:
-        taskSyncService = ClockifyTaskSyncService(library_client, clockify_client)
-        taskSyncService.sync()
+        task_sync_service = ClockifyTaskSyncService(library_client, clockify_client)
+        task_sync_service.sync()
         return
 
-    if checkIfDatesHaveAlreadyBeenCompleted(args.start_date, args.end_date):
+    if is_selected_date_range_already_complete(args.start_date, args.end_date):
         ignore_warning = get_user_confirmation(
             "WARNING: You have already exported today's time entry to the Library.  "
             "Clicking Continue may result in duplicated time entry for today.")
         if not ignore_warning:
             return
 
-    workRecordSyncService = LibraryWorkRecordSyncService(library_client=library_client, clockify_client=clockify_client,
-                                                         start_date=args.start_date.isoformat(),
-                                                         end_date=args.end_date.isoformat())
+    work_record_sync_service = LibraryWorkRecordSyncService(library_client=library_client,
+                                                            clockify_client=clockify_client,
+                                                            start_date=args.start_date.isoformat(),
+                                                            end_date=args.end_date.isoformat())
 
     # Show user the work records retrieved from source application
-    workRecordSyncService.showWorkRecordsToSync()
+    work_record_sync_service.showWorkRecordsToSync()
 
     user_confirmed = get_user_confirmation("Continue with Import to Library?")
     if user_confirmed:
-        workRecordSyncService.sync()
-        saveDatesAsCompleted(args.start_date, args.end_date)
+        work_record_sync_service.sync()
+        save_dates_as_completed(args.start_date, args.end_date)
     else:
         print("Library Import Cancelled")
 
     user_confirmed_sync = get_user_confirmation("Optional: Sync Active Tasks from Library to Clockify?")
     if user_confirmed_sync:
-        taskSyncService = ClockifyTaskSyncService(library_client, clockify_client)
-        taskSyncService.sync()
+        task_sync_service = ClockifyTaskSyncService(library_client, clockify_client)
+        task_sync_service.sync()
     else:
         print("Active Task Sync Cancelled")
 
