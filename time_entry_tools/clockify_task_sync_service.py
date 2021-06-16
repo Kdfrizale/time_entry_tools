@@ -1,9 +1,13 @@
+"""Service to Sync Tasks from the Library to Clockify"""
 from collections import namedtuple
 
 LibrayWorkItem = namedtuple("LibrayWorkItem", "project_name workitem_title")
 ClockifyTask = namedtuple("ClockifyTask", "project_id task_name task_id")
 
+
 class ClockifyTaskSyncService:
+    """Service to Sync Tasks from the Library to Clockify"""
+
     def __init__(self, library_client, clockify_client):
         self._library_client = library_client
         self._clockify_client = clockify_client
@@ -15,7 +19,7 @@ class ClockifyTaskSyncService:
 
     def initialize_data(self):
         """Get the current state of Clockify and the Library"""
-        self.library_workitems_raw = self._library_client.get_workItems_for_User()
+        self.library_workitems_raw = self._library_client.get_workitems_for_user()
         self.library_workitems = self.get_library_workitems_from_raw()
         self.sync_projects()
         self.clockify_active_tasks = self.get_active_tasks_from_clockify()
@@ -75,9 +79,11 @@ class ClockifyTaskSyncService:
                                         self.clockify_done_tasks}
             clockify_projects_dict = dict(self.clockify_projects)
             for workitem_to_add in library_workitems_to_add:
-                self.handle_task_addition_to_clockify(workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict, clockify_projects_dict)
+                self.handle_task_addition_to_clockify(workitem_to_add, clockify_done_task_names,
+                                                      clockify_done_tasks_dict, clockify_projects_dict)
 
-    def handle_task_addition_to_clockify(self, workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict, clockify_projects_dict):
+    def handle_task_addition_to_clockify(self, workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict,
+                                         clockify_projects_dict):
         """Create the task in Clockify if it does not exist.
         If it does exist and is marked DONE, then mark it ACTIVE."""
 
@@ -91,8 +97,8 @@ class ClockifyTaskSyncService:
             project_id = clockify_projects_dict.get(workitem_to_add.project_name, "notFound")
             if project_id == "notFound":
                 raise Exception("Project ID not found")
-            else:
-                self._clockify_client.add_task(project_id, workitem_to_add.workitem_title)
+
+            self._clockify_client.add_task(project_id, workitem_to_add.workitem_title)
 
     def remove_tasks_from_clockify(self):
         """Compare tasks in Library vs Clockify.  Remove tasks not in Library from Clockify."""

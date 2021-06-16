@@ -6,8 +6,8 @@ import os.path
 from gooey import Gooey, GooeyParser
 import PySimpleGUI as sg
 
-from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
-from time_entry_tools.LibraryWorkRecordSyncService import LibraryWorkRecordSyncService
+from time_entry_tools.clockify_task_sync_service import ClockifyTaskSyncService
+from time_entry_tools.library_work_record_sync_service import LibraryWorkRecordSyncService
 from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvider
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
@@ -110,7 +110,7 @@ def main():
                                                             end_date=args.end_date.isoformat())
 
     # Show user the work records retrieved from source application
-    work_record_sync_service.showWorkRecordsToSync()
+    work_record_sync_service.show_work_records_to_sync()
 
     user_confirmed = get_user_confirmation("Continue with Import to Library?")
     if user_confirmed:

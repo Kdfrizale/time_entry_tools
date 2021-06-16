@@ -3,13 +3,13 @@ import configparser
 
 from gooey import Gooey, GooeyParser
 
-from time_entry_tools.ClockifyTaskSyncService import ClockifyTaskSyncService
+from time_entry_tools.clockify_task_sync_service import ClockifyTaskSyncService
 from time_entry_tools.clockify_time_entry_provider import ClockifyTimeEntryProvider
 from time_entry_tools.library_time_entry_provider import LibraryTimeEntryProvider
 
 
 def export_library_tasks_to_file(library_client, filename):
-    workitems = library_client.get_workItems_for_User()
+    workitems = library_client.get_workitems_for_user()
     formatted_workitem_list = [[workitem.project.name, workitem.id + " - " + workitem.title] for workitem in workitems]
     header = ['Project', 'Task']
 
