@@ -3,6 +3,8 @@
 import configparser
 from datetime import datetime, timedelta
 import os.path
+from typing import List
+
 from gooey import Gooey, GooeyParser
 import PySimpleGUI as sg
 
@@ -24,7 +26,7 @@ def get_user_confirmation(prompt: str) -> bool:
     return event == 'Continue'
 
 
-def get_previously_completed_dates():
+def get_previously_completed_dates() -> List[str]:
     """Get a list of dates the tool has already imported time entry.  Used to avoid duplication of time entry."""
     if not os.path.exists('completed_dates.txt'):
         return []
@@ -32,14 +34,14 @@ def get_previously_completed_dates():
         return file.read().splitlines()
 
 
-def is_selected_date_range_already_complete(start_date: datetime, end_date: datetime):
+def is_selected_date_range_already_complete(start_date: datetime, end_date: datetime) -> bool:
     """Verify the selected dates have not been selected for a past import."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     completed_dates = get_previously_completed_dates()
     return any(date in completed_dates for date in dates)
 
 
-def save_dates_as_completed(start_date: datetime, end_date: datetime):
+def save_dates_as_completed(start_date: datetime, end_date: datetime) -> None:
     """Record the selected dates as completed."""
     dates = [(start_date + timedelta(days=i)).isoformat() for i in range((end_date - start_date).days + 1)]
     with open('completed_dates.txt', 'a') as file:

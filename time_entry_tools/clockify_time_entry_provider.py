@@ -3,6 +3,7 @@
 from collections import namedtuple, deque
 from datetime import datetime, timedelta
 import time
+from typing import Dict, List
 
 import requests
 from time_entry_tools.workrecord import WorkRecord, convert_to_hours, get_workitem_id_from_task_name
@@ -10,6 +11,8 @@ from time_entry_tools.time_entry_provider import TimeEntryProvider
 
 Project = namedtuple('Project', 'name id')
 Task = namedtuple('Task', 'name id')
+
+URL = str
 
 
 def api_rate_limit(func):
@@ -32,22 +35,22 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         self._previous_request_timestamps = deque(10*[datetime.min], maxlen=10)
 
     @property
-    def api_rate_limit_delay(self):
+    def api_rate_limit_delay(self) -> float:
         """Number of seconds to delay between requests to ensure the api usage limit is not exceeded"""
         return self._api_rate_limit_delay
 
     @property
-    def summary_report_endpoint(self):
+    def summary_report_endpoint(self) -> URL:
         """URL for the Clockify Summary Report endpoint"""
         return "https://reports.api.clockify.me/v1/workspaces/%s/reports/summary" % self.clockify_workspace_id
 
     @property
-    def projects_endpoint(self):
+    def projects_endpoint(self) -> URL:
         """URL for the Clockify Projects endpoint"""
         return "https://api.clockify.me/api/v1/workspaces/%s/projects" % self.clockify_workspace_id
 
     @property
-    def headers(self):
+    def headers(self) -> Dict[str, str]:
         """HTTP Headers common to all requests to Clockify"""
         return {
             "content-type": "application/json",
@@ -55,7 +58,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         }
 
     @api_rate_limit
-    def get_work_records(self, start_date_time: str, end_date_time: str):
+    def get_work_records(self, start_date_time: str, end_date_time: str) -> List[WorkRecord]:
         """REST Request to get work records in clockify between the selected dates."""
         json_request = {
             "dateRangeStart": start_date_time,
@@ -72,16 +75,16 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         return self.parse_clockify_response_for_work_records(response.json())
 
     @api_rate_limit
-    def get_projects(self):
+    def get_projects(self) -> List[Project]:
         """REST Request to get all projects in Clockify"""
         response = requests.get(self.projects_endpoint, headers=self.headers)
         return self.parse_clockify_response_for_projects(response.json())
 
-    def save_work_records(self, work_records: list):
+    def save_work_records(self, work_records: List[WorkRecord]):
         raise NotImplementedError
 
     @api_rate_limit
-    def add_project(self, project_name):
+    def add_project(self, project_name) -> None:
         """REST Request to add a project to Clockify"""
         json_request = {
             "name": project_name,
@@ -91,19 +94,19 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             raise Exception("Project creation failed in Clockify! Response code : ", response.status_code)
 
     @api_rate_limit
-    def get_active_tasks_for_project(self, project_id):
+    def get_active_tasks_for_project(self, project_id) -> List[Task]:
         """REST Request to get all active tasks for a project in Clockify"""
         response = requests.get(self.projects_endpoint + "/%s/tasks?is-active=true" % project_id, headers=self.headers)
         return self.parse_clockify_response_for_project_tasks(response.json())
 
     @api_rate_limit
-    def get_done_tasks_for_project(self, project_id):
+    def get_done_tasks_for_project(self, project_id) -> List[Task]:
         """REST Request to get all non-active tasks for a project in Clockify"""
         response = requests.get(self.projects_endpoint + "/%s/tasks?is-active=false" % project_id, headers=self.headers)
         return self.parse_clockify_response_for_project_tasks(response.json())
 
     @api_rate_limit
-    def add_task(self, project_id, task_name):
+    def add_task(self, project_id, task_name) -> None:
         """REST Request to add a task to Clockify"""
         json_request = {
             "name": task_name,
@@ -114,7 +117,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             raise Exception("Task creation failed in Clockify! Response code : ", response.status_code)
 
     @api_rate_limit
-    def mark_task_as_done(self, project_id, task_id, task_name):
+    def mark_task_as_done(self, project_id, task_id, task_name) -> None:
         """REST Request to mark a Clockify Task as DONE"""
         json_request = {
           "name": task_name,
@@ -125,7 +128,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             raise Exception("Task update failed in Clockify! Response code : ", response.status_code)
 
     @api_rate_limit
-    def mark_task_as_active(self, project_id, task_id, task_name):
+    def mark_task_as_active(self, project_id, task_id, task_name) -> None:
         """REST Request to mark a Clockify Task as ACTIVE"""
         json_request = {
             "name": task_name,
@@ -137,7 +140,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
             raise Exception("Task update failed in Clockify! Response code : ", response.status_code)
 
     @api_rate_limit
-    def delete(self, project_id, task_id):
+    def delete(self, project_id, task_id) -> None:
         """REST Request to Delete a Task in Clockify"""
         response = requests.delete(self.projects_endpoint + f'/{project_id}/tasks/{task_id}', headers=self.headers)
         if response.status_code != 200:
@@ -145,7 +148,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
 
 
     @staticmethod
-    def parse_clockify_response_for_project_tasks(json_response):
+    def parse_clockify_response_for_project_tasks(json_response) -> List[Task]:
         """Parse JSON response to get a list of tasks"""
         tasks = []
         for task_json in json_response:
@@ -153,7 +156,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         return tasks
 
     @staticmethod
-    def parse_clockify_response_for_projects(json_response):
+    def parse_clockify_response_for_projects(json_response) -> List[Project]:
         """Parse JSON response to get list of Projects"""
         projects = []
         for project in json_response:
@@ -163,7 +166,7 @@ class ClockifyTimeEntryProvider(TimeEntryProvider):
         # print(projects)
 
     @staticmethod
-    def parse_clockify_response_for_work_records(json_response):
+    def parse_clockify_response_for_work_records(json_response) -> List[WorkRecord]:
         """Parse Clockify response into WorkRecord objects.
         Aggregates WorkRecords together if they are for the same WorkItem.
         If the WorkItem is for Sales, do NOT aggregate WorkRecords."""

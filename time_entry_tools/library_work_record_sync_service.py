@@ -10,11 +10,11 @@ class LibraryWorkRecordSyncService:
         self.end_date = end_date
         self.work_records = self._clockify_client.get_work_records(self.start_date, self.end_date)
 
-    def sync(self):
+    def sync(self) -> None:
         """Sync workRecords from Clockify to the Libray"""
         self._library_client.save_work_records(self.work_records)
 
-    def show_work_records_to_sync(self):
+    def show_work_records_to_sync(self) -> None:
         """Show the user what WorkRecords were selected for import to the Library"""
         for work_record in self.work_records:
             print(

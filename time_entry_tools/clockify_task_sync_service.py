@@ -1,5 +1,6 @@
 """Service to Sync Tasks from the Library to Clockify"""
 from collections import namedtuple
+from typing import List
 
 LibrayWorkItem = namedtuple("LibrayWorkItem", "project_name workitem_title")
 ClockifyTask = namedtuple("ClockifyTask", "project_id task_name task_id")
@@ -25,25 +26,25 @@ class ClockifyTaskSyncService:
         self.clockify_active_tasks = self.get_active_tasks_from_clockify()
         self.clockify_done_tasks = self.get_done_tasks_from_clockify()
 
-    def sync(self):
+    def sync(self) -> None:
         """Primary method. Syncs both projects and tasks from the Library to Clockify."""
         print("Syncing Tasks and Projects...", flush=True)
         self.initialize_data()
         self.add_tasks_to_clockify()
         self.remove_tasks_from_clockify()
 
-    def sync_projects(self):
+    def sync_projects(self) -> None:
         """Create projects in Clockify that exist in the library."""
         self.clockify_projects = self._clockify_client.get_projects()
         self.add_projects_from_library_to_clockify()
         self.clockify_projects = self._clockify_client.get_projects()  # Update list to include ids of newly created projects
 
-    def get_library_workitems_from_raw(self):
+    def get_library_workitems_from_raw(self) -> List[LibrayWorkItem]:
         """Parse the workitem library response into WorkItem objects"""
         return [LibrayWorkItem(project_name=workitem.project.name, workitem_title=workitem.id + " - " + workitem.title)
                 for workitem in self.library_workitems_raw]
 
-    def add_projects_from_library_to_clockify(self):
+    def add_projects_from_library_to_clockify(self) -> None:
         """Add missing projects to Clockify"""
         clockify_projects_names = {project.name for project in self.clockify_projects}
         library_projects = {workitem.project.name for workitem in self.library_workitems_raw}
@@ -52,7 +53,7 @@ class ClockifyTaskSyncService:
             self._clockify_client.add_project(project)
 
     ##TODO could combine this to be a single query, that is then filtered to active and done (helps as # of projects grows N vs N*2)
-    def get_active_tasks_from_clockify(self):
+    def get_active_tasks_from_clockify(self) -> List[ClockifyTask]:
         """Get all ACTIVE tasks from all projects in Clockify."""
         clockify_tasks = []
         for project in self.clockify_projects:
@@ -60,7 +61,7 @@ class ClockifyTaskSyncService:
                                    for task in self._clockify_client.get_active_tasks_for_project(project.id)])
         return clockify_tasks
 
-    def get_done_tasks_from_clockify(self):
+    def get_done_tasks_from_clockify(self) -> List[ClockifyTask]:
         """Get all DONE tasks from all projects in Clockify."""
         clockify_tasks = []
         for project in self.clockify_projects:
@@ -68,7 +69,7 @@ class ClockifyTaskSyncService:
                                    for task in self._clockify_client.get_done_tasks_for_project(project.id)])
         return clockify_tasks
 
-    def add_tasks_to_clockify(self):
+    def add_tasks_to_clockify(self) -> None:
         """Compare Tasks in Library vs Clockify.  Add tasks not in Clockify to Clockify"""
         clockify_active_task_names = [task.task_name for task in self.clockify_active_tasks]
         library_workitems_to_add = [library_workitem for library_workitem in self.library_workitems if
@@ -83,7 +84,7 @@ class ClockifyTaskSyncService:
                                                       clockify_done_tasks_dict, clockify_projects_dict)
 
     def handle_task_addition_to_clockify(self, workitem_to_add, clockify_done_task_names, clockify_done_tasks_dict,
-                                         clockify_projects_dict):
+                                         clockify_projects_dict) -> None:
         """Create the task in Clockify if it does not exist.
         If it does exist and is marked DONE, then mark it ACTIVE."""
 
@@ -100,7 +101,7 @@ class ClockifyTaskSyncService:
 
             self._clockify_client.add_task(project_id, workitem_to_add.workitem_title)
 
-    def remove_tasks_from_clockify(self):
+    def remove_tasks_from_clockify(self) -> None:
         """Compare tasks in Library vs Clockify.  Remove tasks not in Library from Clockify."""
         library_tasks = {workitem.workitem_title for workitem in self.library_workitems}
         clockify_tasks_to_remove = [task for task in self.clockify_active_tasks if task.task_name not in library_tasks]
